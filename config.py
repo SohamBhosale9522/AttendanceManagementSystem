@@ -6,12 +6,18 @@ from pymongo import MongoClient
 # Load environment variables from .env file
 load_dotenv()
 
+def _get_int_env(key, default):
+    val = os.getenv(key)
+    if val is not None and str(val).strip().isdigit():
+        return int(str(val).strip())
+    return default
+
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'default-fallback-dev-secret-key-change-in-prod')
     
     # MySQL Database Config
     MYSQL_HOST = os.getenv('MYSQL_HOST', 'localhost')
-    MYSQL_PORT = int(os.getenv('MYSQL_PORT', 3306))
+    MYSQL_PORT = _get_int_env('MYSQL_PORT', 3306)
     MYSQL_DATABASE = os.getenv('MYSQL_DATABASE', 'AttendanceManagement')
     MYSQL_USER = os.getenv('MYSQL_USER', 'faculty_user')
     MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', 'ReplaceWithAStrongPassword!')
