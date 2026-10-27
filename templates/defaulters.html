@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Defaulter List Analysis{% endblock %}
+{% block header_title %}Defaulter List (Stored Procedure: GenerateDefaulterList){% endblock %}
+
+{% block content %}
+<!-- Stored Procedure Query Controls -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body p-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <span class="badge bg-danger bg-opacity-10 text-danger p-2 fs-6"><i class="bi bi-cpu-fill"></i></span>
+      <div>
+        <h6 class="fw-bold mb-0 text-dark">MySQL Stored Procedure Execution</h6>
+        <small class="text-muted"><code>CALL GenerateDefaulterList(p_course_id, p_threshold);</code></small>
+      </div>
+    </div>
+
+    <form method="GET" action="{{ url_for('defaulters.defaulter_list') }}" class="row g-3 align-items-end">
+      <!-- Course Selector -->
+      <div class="col-12 col-md-5">
+        <label class="form-label fw-semibold small text-secondary">Select Course:</label>
+        <select name="course_id" class="form-select" onchange="this.form.submit()">
+          {% for c in courses %}
+            <option value="{{ c.course_id }}" {% if c.course_id == selected_course_id %}selected{% endif %}>
+              {{ c.course_code }} - {{ c.course_name }} ({{ c.faculty_name }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Threshold Input -->
+      <div class="col-12 col-md-4">
+        <label class="form-label fw-semibold small text-secondary">
+          Minimum Attendance Threshold (%):
+          <span class="fw-bold text-danger ms-1" id="thresholdValueLabel">{{ threshold }}%</span>
+        </label>
+        <div class="d-flex align-items-center gap-2">
+          <input type="range" class="form-range" min="50" max="100" step="5" value="{{ threshold }}" id="thresholdRange" oninput="document.getElementById('thresholdInput').value = this.value; document.getElementById('thresholdValueLabel').innerText = this.value + '%';">
+          <input type="number" name="threshold" id="thresholdInput" class="form-control text-center" style="width: 85px;" min="0" max="100" step="1" value="{{ threshold }}">
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="col-12 col-md-3">
+        <button type="submit" class="btn btn-danger w-100 fw-semibold">
+          <i class="bi bi-play-circle-fill me-1"></i> Run Procedure
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Defaulters Stored Procedure Results -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-white border-bottom py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div>
+      <h6 class="mb-0 fw-bold text-danger">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>Defaulters Identified (&lt; {{ threshold }}% Attendance)
+      </h6>
+      <small class="text-muted">Target Course: <strong>{{ selected_course.course_code }} - {{ selected_course.course_name }}</strong></small>
+    </div>
+    <span class="badge bg-danger px-3 py-2 fs-6">
+      {{ defaulters|length }} Student{{ 's' if defaulters|length != 1 else '' }} in Defaulter List
+    </span>
+  </div>
+  
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Roll No</th>
+          <th>Student Name</th>
+          <th>Course</th>
+          <th class="text-center">Total Classes</th>
+          <th class="text-center">Attended Classes</th>
+          <th>Attendance Ratio</th>
+          <th>Defaulter Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in defaulters %}
+        <tr class="row-defaulter">
+          <td><span class="badge bg-danger bg-opacity-25 text-danger font-monospace px-2 py-1 fw-bold">{{ d.roll_no }}</span></td>
+          <td class="fw-bold text-dark">{{ d.student_name }}</td>
+          <td><span class="text-muted small">{{ d.course_name }}</span></td>
+          <td class="text-center fw-semibold">{{ d.total_classes }}</td>
+          <td class="text-center fw-bold text-danger">{{ d.attended_classes }}</td>
+          <td style="min-width: 180px;">
+            <div class="d-flex align-items-center gap-2">
+              <div class="progress flex-grow-1" style="height: 10px;">
+                <div class="progress-bar bg-danger" role="progressbar" style="width: {{ d.attendance_percentage }}%;" aria-valuenow="{{ d.attendance_percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+              <span class="fw-bold text-danger small font-monospace">{{ d.attendance_percentage }}%</span>
+            </div>
+          </td>
+          <td>
+            <span class="badge bg-danger text-white"><i class="bi bi-exclamation-circle me-1"></i>Defaulter (&lt; {{ threshold }}%)</span>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" class="text-center py-5 text-success">
+            <i class="bi bi-patch-check-fill fs-1 d-block mb-2 text-success"></i>
+            <h6 class="fw-bold">No defaulters detected for this course!</h6>
+            <small class="text-muted">All students enrolled in {{ selected_course.course_code }} have met or exceeded the {{ threshold }}% threshold.</small>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Complete Class Roster Comparison -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white border-bottom py-3">
+    <h6 class="mb-0 fw-bold text-dark">
+      <i class="bi bi-bar-chart-steps text-primary me-2"></i>Full Class Roster Comparison ({{ all_students|length }} students)
+    </h6>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Roll No</th>
+          <th>Student Name</th>
+          <th class="text-center">Total Classes</th>
+          <th class="text-center">Attended Classes</th>
+          <th>Attendance Percentage</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in all_students %}
+        <tr class="{% if s.attendance_percentage < threshold %}table-danger table-opacity-25{% endif %}">
+          <td><span class="badge bg-light text-dark border font-monospace">{{ s.roll_no }}</span></td>
+          <td class="fw-semibold">{{ s.student_name }}</td>
+          <td class="text-center">{{ s.total_classes }}</td>
+          <td class="text-center">{{ s.attended_classes }}</td>
+          <td style="min-width: 180px;">
+            <div class="d-flex align-items-center gap-2">
+              <div class="progress flex-grow-1" style="height: 8px;">
+                <div class="progress-bar {% if s.attendance_percentage >= threshold %}bg-success{% else %}bg-danger{% endif %}" role="progressbar" style="width: {{ s.attendance_percentage }}%;"></div>
+              </div>
+              <span class="fw-bold small font-monospace {% if s.attendance_percentage >= threshold %}text-success{% else %}text-danger{% endif %}">{{ s.attendance_percentage }}%</span>
+            </div>
+          </td>
+          <td>
+            {% if s.attendance_percentage >= threshold %}
+              <span class="badge bg-success bg-opacity-10 text-success border border-success"><i class="bi bi-check2"></i> Safe (&ge; {{ threshold }}%)</span>
+            {% else %}
+              <span class="badge bg-danger"><i class="bi bi-x-octagon"></i> Defaulter</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" class="text-center py-4 text-muted">No attendance data recorded yet for this course.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.getElementById('thresholdInput').addEventListener('input', function() {
+    const val = parseFloat(this.value) || 0;
+    document.getElementById('thresholdRange').value = val;
+    document.getElementById('thresholdValueLabel').innerText = val + '%';
+  });
+</script>
+{% endblock %}

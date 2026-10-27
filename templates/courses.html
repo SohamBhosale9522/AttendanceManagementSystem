@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Course Catalog{% endblock %}
+{% block header_title %}Course Catalog & Attendance Summary{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  {% for course in courses %}
+  <div class="col-12 col-md-6 col-xl-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white border-bottom p-3 d-flex align-items-center justify-content-between">
+        <div>
+          <span class="badge bg-primary px-2 py-1 fw-bold">{{ course.course_code }}</span>
+          <span class="badge bg-light text-dark border ms-1">Semester {{ course.semester }}</span>
+        </div>
+        <div class="text-muted small">ID: #{{ course.course_id }}</div>
+      </div>
+      <div class="card-body p-4">
+        <h5 class="fw-bold text-dark mb-2">{{ course.course_name }}</h5>
+        <div class="text-secondary small mb-3">
+          <i class="bi bi-person-video3 me-1 text-primary"></i>Faculty: <span class="fw-semibold text-dark">{{ course.faculty_name }}</span>
+        </div>
+
+        <!-- Attendance Stats Pill Box -->
+        <div class="bg-light p-3 rounded-3 mb-3 border">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-muted small fw-medium">Total Attendance Records:</span>
+            <span class="fw-bold fs-6 text-dark">{{ course.total_records }}</span>
+          </div>
+          <div class="d-flex justify-content-between text-center pt-2 border-top">
+            <div>
+              <span class="badge-status badge-present py-1 px-2 d-inline-block">{{ course.present_count or 0 }}</span>
+              <div class="text-muted small" style="font-size: 0.7rem;">Present</div>
+            </div>
+            <div>
+              <span class="badge-status badge-late py-1 px-2 d-inline-block">{{ course.late_count or 0 }}</span>
+              <div class="text-muted small" style="font-size: 0.7rem;">Late</div>
+            </div>
+            <div>
+              <span class="badge-status badge-absent py-1 px-2 d-inline-block">{{ course.absent_count or 0 }}</span>
+              <div class="text-muted small" style="font-size: 0.7rem;">Absent</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <a href="{{ url_for('attendance.list_attendance', course_id=course.course_id) }}" class="btn btn-sm btn-outline-primary flex-grow-1">
+            <i class="bi bi-list-check me-1"></i>Records
+          </a>
+          <a href="{{ url_for('defaulters.defaulter_list', course_id=course.course_id) }}" class="btn btn-sm btn-outline-danger flex-grow-1">
+            <i class="bi bi-exclamation-triangle me-1"></i>Defaulters
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-12">
+    <div class="card border-0 shadow-sm p-5 text-center text-muted">
+      <i class="bi bi-journal-x fs-1 mb-2 text-secondary opacity-50"></i>
+      No courses registered in the database.
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

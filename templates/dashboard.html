@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block header_title %}Academic Overview Dashboard{% endblock %}
+
+{% block content %}
+<!-- Quick Stats Cards Row -->
+<div class="row g-3 mb-4">
+  <!-- Students Card -->
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="card stat-card p-3 border-0 shadow-sm h-100">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <span class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem; letter-spacing: 0.05em;">Total Students</span>
+          <h2 class="fw-bold mb-0 text-dark mt-1">{{ stats.total_students }}</h2>
+          <small class="text-primary fw-medium"><i class="bi bi-person-badge me-1"></i>Enrolled in DBMS</small>
+        </div>
+        <div class="stat-icon-box bg-primary bg-opacity-10 text-primary">
+          <i class="bi bi-people-fill"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Courses Card -->
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="card stat-card p-3 border-0 shadow-sm h-100">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <span class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem; letter-spacing: 0.05em;">Active Courses</span>
+          <h2 class="fw-bold mb-0 text-dark mt-1">{{ stats.total_courses }}</h2>
+          <small class="text-info fw-medium"><i class="bi bi-mortarboard me-1"></i>Semester Curriculum</small>
+        </div>
+        <div class="stat-icon-box bg-info bg-opacity-10 text-info">
+          <i class="bi bi-journal-bookmark-fill"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendance Records Card -->
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="card stat-card p-3 border-0 shadow-sm h-100">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <span class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem; letter-spacing: 0.05em;">Attendance Records</span>
+          <h2 class="fw-bold mb-0 text-dark mt-1">{{ stats.total_attendance }}</h2>
+          <small class="text-success fw-medium"><i class="bi bi-check2-circle me-1"></i>Logged in MySQL</small>
+        </div>
+        <div class="stat-icon-box bg-success bg-opacity-10 text-success">
+          <i class="bi bi-calendar-check-fill"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pending Leave Applications Card (MongoDB) -->
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="card stat-card p-3 border-0 shadow-sm h-100">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <span class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem; letter-spacing: 0.05em;">Pending Leaves</span>
+          <h2 class="fw-bold mb-0 text-warning mt-1">{{ stats.pending_leaves }}</h2>
+          <small class="text-muted"><i class="bi bi-database me-1"></i>MongoDB Collection</small>
+        </div>
+        <div class="stat-icon-box bg-warning bg-opacity-10 text-warning">
+          <i class="bi bi-file-earmark-medical-fill"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Action Shortcuts -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body p-3">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-lightning-charge-fill text-warning fs-5"></i>
+        <span class="fw-semibold text-secondary">Quick Actions:</span>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <a href="{{ url_for('attendance.list_attendance') }}" class="btn btn-sm btn-primary">
+          <i class="bi bi-plus-circle me-1"></i> Mark Attendance
+        </a>
+        <a href="{{ url_for('defaulters.defaulter_list') }}" class="btn btn-sm btn-outline-danger">
+          <i class="bi bi-exclamation-triangle me-1"></i> Check Defaulters (&lt;75%)
+        </a>
+        <a href="{{ url_for('leaves.list_leaves') }}" class="btn btn-sm btn-outline-info">
+          <i class="bi bi-inbox me-1"></i> Review Leaves ({{ stats.pending_leaves }} pending)
+        </a>
+        <a href="{{ url_for('students.list_students') }}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-person-plus me-1"></i> Add Student
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-3 mb-4">
+  <!-- Attendance Status Distribution -->
+  <div class="col-12 col-lg-5">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white border-bottom py-3">
+        <h6 class="mb-0 fw-bold text-dark">
+          <i class="bi bi-pie-chart-fill text-primary me-2"></i>Overall Attendance Distribution
+        </h6>
+      </div>
+      <div class="card-body d-flex flex-column align-items-center justify-content-center p-4">
+        <div style="position: relative; height: 240px; width: 100%;">
+          <canvas id="attendanceDoughnutChart"></canvas>
+        </div>
+        <div class="d-flex justify-content-around w-100 mt-3 pt-3 border-top text-center">
+          <div>
+            <div class="text-success fw-bold fs-5">{{ stats.attendance_distribution.Present }}</div>
+            <small class="text-muted">Present</small>
+          </div>
+          <div>
+            <div class="text-warning fw-bold fs-5">{{ stats.attendance_distribution.Late }}</div>
+            <small class="text-muted">Late</small>
+          </div>
+          <div>
+            <div class="text-danger fw-bold fs-5">{{ stats.attendance_distribution.Absent }}</div>
+            <small class="text-muted">Absent</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendance by Course Bar Chart -->
+  <div class="col-12 col-lg-7">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white border-bottom py-3">
+        <h6 class="mb-0 fw-bold text-dark">
+          <i class="bi bi-bar-chart-fill text-primary me-2"></i>Attendance Breakdown by Course
+        </h6>
+      </div>
+      <div class="card-body p-4">
+        <div style="position: relative; height: 260px; width: 100%;">
+          <canvas id="courseAttendanceBarChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Activity Feeds Row -->
+<div class="row g-3">
+  <!-- Recent Attendance Records -->
+  <div class="col-12 col-lg-7">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+        <h6 class="mb-0 fw-bold text-dark">
+          <i class="bi bi-clock-history text-primary me-2"></i>Recent Attendance Logs
+        </h6>
+        <a href="{{ url_for('attendance.list_attendance') }}" class="btn btn-sm btn-link text-decoration-none">View All</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Student</th>
+              <th>Course</th>
+              <th>Status</th>
+              <th>Marked By</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rec in stats.recent_attendance %}
+            <tr>
+              <td><span class="text-nowrap small text-muted">{{ rec.attendance_date }}</span></td>
+              <td>
+                <div class="fw-semibold">{{ rec.student_name }}</div>
+                <small class="text-muted">{{ rec.roll_no }}</small>
+              </td>
+              <td><span class="badge bg-light text-dark border">{{ rec.course_code }}</span></td>
+              <td>
+                {% if rec.status == 'Present' %}
+                  <span class="badge-status badge-present"><i class="bi bi-check-circle"></i> Present</span>
+                {% elif rec.status == 'Late' %}
+                  <span class="badge-status badge-late"><i class="bi bi-alarm"></i> Late</span>
+                {% else %}
+                  <span class="badge-status badge-absent"><i class="bi bi-x-circle"></i> Absent</span>
+                {% endif %}
+              </td>
+              <td><small class="text-muted">{{ rec.marked_by }}</small></td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="5" class="text-center py-4 text-muted">No attendance activity logged yet.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Leave Applications (MongoDB) -->
+  <div class="col-12 col-lg-5">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+        <h6 class="mb-0 fw-bold text-dark">
+          <i class="bi bi-file-earmark-medical text-warning me-2"></i>Leave Applications (MongoDB)
+        </h6>
+        <a href="{{ url_for('leaves.list_leaves') }}" class="btn btn-sm btn-link text-decoration-none">Manage Leaves</a>
+      </div>
+      <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+          {% for leave in stats.recent_leaves %}
+          <div class="list-group-item p-3">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+              <span class="fw-bold text-dark">{{ leave.student_name }} ({{ leave.student_roll_no }})</span>
+              {% if leave.status == 'Pending' %}
+                <span class="badge-status badge-pending">Pending</span>
+              {% elif leave.status == 'Approved' %}
+                <span class="badge-status badge-approved">Approved</span>
+              {% else %}
+                <span class="badge-status badge-rejected">Rejected</span>
+              {% endif %}
+            </div>
+            <div class="small text-muted mb-1">{{ leave.reason }}</div>
+            <div class="d-flex justify-content-between align-items-center small text-secondary">
+              <span><i class="bi bi-tag me-1"></i>{{ leave.leave_type }}</span>
+              <span><i class="bi bi-clock me-1"></i>{{ leave.applied_at|format_date }}</span>
+            </div>
+          </div>
+          {% else %}
+          <div class="p-4 text-center text-muted">No leave applications recorded in MongoDB.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard_charts.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const distData = {{ stats.attendance_distribution|tojson }};
+    const courseStats = {{ stats.course_stats|tojson }};
+    initDashboardCharts(distData, courseStats);
+  });
+</script>
+{% endblock %}

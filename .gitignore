@@ -1,0 +1,29 @@
+# Python virtual environment
+venv/
+env/
+ENV/
+.venv/
+
+# Byte-compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables
+.env
+
+# Flask instance
+instance/
+.webassets-cache
+
+# IDE & OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Logs
+*.log

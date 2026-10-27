@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance Records{% endblock %}
+{% block header_title %}Attendance Records & Session Logs{% endblock %}
+
+{% block content %}
+<!-- Filter & Action Bar -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body p-3">
+    <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3">
+      <!-- Filter Form -->
+      <form method="GET" action="{{ url_for('attendance.list_attendance') }}" class="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
+        <div class="input-group" style="max-width: 170px;">
+          <input type="date" name="date" class="form-control" value="{{ selected_date }}" title="Filter by date">
+        </div>
+
+        <select name="student_id" class="form-select" style="max-width: 180px;">
+          <option value="">All Students</option>
+          {% for s in students %}
+            <option value="{{ s.student_id }}" {% if s.student_id|string == selected_student_id %}selected{% endif %}>
+              {{ s.roll_no }} - {{ s.student_name }}
+            </option>
+          {% endfor %}
+        </select>
+
+        <select name="course_id" class="form-select" style="max-width: 170px;">
+          <option value="">All Courses</option>
+          {% for c in courses %}
+            <option value="{{ c.course_id }}" {% if c.course_id|string == selected_course_id %}selected{% endif %}>
+              {{ c.course_code }}
+            </option>
+          {% endfor %}
+        </select>
+
+        <select name="status" class="form-select" style="max-width: 130px;">
+          <option value="">All Statuses</option>
+          <option value="Present" {% if selected_status == 'Present' %}selected{% endif %}>Present</option>
+          <option value="Late" {% if selected_status == 'Late' %}selected{% endif %}>Late</option>
+          <option value="Absent" {% if selected_status == 'Absent' %}selected{% endif %}>Absent</option>
+        </select>
+
+        <button type="submit" class="btn btn-secondary btn-sm"><i class="bi bi-funnel me-1"></i>Apply</button>
+        {% if selected_date or selected_student_id or selected_course_id or selected_status %}
+          <a href="{{ url_for('attendance.list_attendance') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
+        {% endif %}
+      </form>
+
+      <!-- Mark Attendance Button -->
+      <button type="button" class="btn btn-primary text-nowrap" data-bs-toggle="modal" data-bs-target="#markAttendanceModal">
+        <i class="bi bi-calendar-plus-fill me-1"></i> Mark Attendance
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Attendance Records Table -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+    <h6 class="mb-0 fw-bold text-dark">
+      <i class="bi bi-card-checklist text-primary me-2"></i>Attendance Logs ({{ records|length }} records)
+    </h6>
+    <input type="text" id="tableSearchInput" data-table-target="#attendanceTable" class="form-control form-control-sm" placeholder="Search table..." style="max-width: 220px;">
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0" id="attendanceTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Date</th>
+          <th>Student</th>
+          <th>Course</th>
+          <th>Classroom / Location</th>
+          <th>Status</th>
+          <th>Marked By</th>
+          <th>Timestamp</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rec in records %}
+        <tr>
+          <td><span class="text-muted small">#{{ rec.attendance_id }}</span></td>
+          <td><span class="fw-semibold text-dark">{{ rec.attendance_date }}</span></td>
+          <td>
+            <div class="fw-bold text-dark">{{ rec.student_name }}</div>
+            <span class="badge bg-light text-muted border font-monospace">{{ rec.roll_no }}</span>
+          </td>
+          <td>
+            <div class="fw-semibold">{{ rec.course_code }}</div>
+            <small class="text-muted text-truncate d-inline-block" style="max-width: 150px;">{{ rec.course_name }}</small>
+          </td>
+          <td>
+            <span class="badge bg-light text-dark border"><i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ rec.room_name or 'Main Hall' }}</span>
+            {% if rec.location_coords %}
+              <div class="text-muted font-monospace" style="font-size: 0.7rem;">{{ rec.location_coords }}</div>
+            {% endif %}
+          </td>
+          <td>
+            {% if rec.status == 'Present' %}
+              <span class="badge-status badge-present"><i class="bi bi-check-circle"></i> Present</span>
+            {% elif rec.status == 'Late' %}
+              <span class="badge-status badge-late"><i class="bi bi-alarm"></i> Late</span>
+            {% else %}
+              <span class="badge-status badge-absent"><i class="bi bi-x-circle"></i> Absent</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge bg-light text-secondary border"><i class="bi bi-person me-1"></i>{{ rec.marked_by }}</span>
+          </td>
+          <td><small class="text-muted">{{ rec.marked_at|format_datetime }}</small></td>
+          <td class="text-end text-nowrap">
+            <!-- Edit Status Modal Button -->
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editModal{{ rec.attendance_id }}" title="Correct Status">
+              <i class="bi bi-pencil-square"></i>
+            </button>
+            <!-- Delete Button -->
+            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ rec.attendance_id }}" title="Delete Record">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+
+        <!-- Edit Status Modal -->
+        <div class="modal fade" id="editModal{{ rec.attendance_id }}" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0 shadow">
+              <div class="modal-header bg-light">
+                <h6 class="modal-title fw-bold">Update Status #{{ rec.attendance_id }}</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <form method="POST" action="{{ url_for('attendance.update_attendance', attendance_id=rec.attendance_id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body p-3">
+                  <div class="text-muted small mb-2">Student: <strong>{{ rec.student_name }}</strong></div>
+                  <div class="text-muted small mb-3">Course: <strong>{{ rec.course_code }}</strong> ({{ rec.attendance_date }})</div>
+                  <label class="form-label small fw-semibold text-secondary">Correction Status:</label>
+                  <select name="status" class="form-select mb-2" required>
+                    <option value="Present" {% if rec.status == 'Present' %}selected{% endif %}>Present</option>
+                    <option value="Late" {% if rec.status == 'Late' %}selected{% endif %}>Late</option>
+                    <option value="Absent" {% if rec.status == 'Absent' %}selected{% endif %}>Absent</option>
+                  </select>
+                  <small class="text-muted d-block"><i class="bi bi-info-circle me-1"></i>This update triggers an entry into MySQL <code>AuditLog</code>.</small>
+                </div>
+                <div class="modal-footer bg-light p-2">
+                  <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                  <button type="submit" class="btn btn-sm btn-primary">Save Change</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div class="modal fade" id="deleteModal{{ rec.attendance_id }}" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0 shadow">
+              <div class="modal-header bg-danger text-white">
+                <h6 class="modal-title fw-bold">Delete Record #{{ rec.attendance_id }}</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body p-3">
+                <p class="small text-muted mb-0">Are you sure you want to delete this attendance record for <strong>{{ rec.student_name }}</strong>? This action will fire the MySQL delete trigger and be recorded in the audit log.</p>
+              </div>
+              <div class="modal-footer bg-light p-2">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{{ url_for('attendance.delete_attendance', attendance_id=rec.attendance_id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-sm btn-danger">Confirm Delete</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {% else %}
+        <tr>
+          <td colspan="9" class="text-center py-5 text-muted">
+            <i class="bi bi-calendar-x fs-1 d-block mb-2 text-secondary opacity-50"></i>
+            No attendance records found for the selected filters.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Mark Attendance Modal -->
+<div class="modal fade" id="markAttendanceModal" tabindex="-1" aria-labelledby="markAttendanceModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold" id="markAttendanceModalLabel"><i class="bi bi-calendar-check me-2"></i>Record Student Attendance</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="{{ url_for('attendance.mark_attendance') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-body p-4">
+          <div class="mb-3">
+            <label class="form-label fw-semibold small text-secondary">Student *</label>
+            <select name="student_id" class="form-select" required>
+              <option value="">-- Choose Student --</option>
+              {% for s in students %}
+                <option value="{{ s.student_id }}">{{ s.roll_no }} - {{ s.student_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold small text-secondary">Course *</label>
+            <select name="course_id" class="form-select" required>
+              <option value="">-- Choose Course --</option>
+              {% for c in courses %}
+                <option value="{{ c.course_id }}">{{ c.course_code }} - {{ c.course_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-semibold small text-secondary">Classroom</label>
+              <select name="classroom_id" class="form-select">
+                <option value="">Campus Default (Geofenced)</option>
+                {% for cl in classrooms %}
+                  <option value="{{ cl.classroom_id }}">{{ cl.room_name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold small text-secondary">Attendance Date *</label>
+              <input type="date" name="attendance_date" class="form-control" required value="{{ selected_date or '2026-10-27' }}">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold small text-secondary">Attendance Status *</label>
+            <div class="d-flex gap-3">
+              <div class="form-check">
+                <input class="form-check-input text-success" type="radio" name="status" id="statusPresent" value="Present" checked>
+                <label class="form-check-label fw-medium text-success" for="statusPresent">Present</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input text-warning" type="radio" name="status" id="statusLate" value="Late">
+                <label class="form-check-label fw-medium text-warning" for="statusLate">Late</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input text-danger" type="radio" name="status" id="statusAbsent" value="Absent">
+                <label class="form-check-label fw-medium text-danger" for="statusAbsent">Absent</label>
+              </div>
+            </div>
+          </div>
+          
+          <div class="alert alert-info py-2 px-3 small mb-0">
+            <i class="bi bi-info-circle me-1"></i> The MySQL <code>trg_attendance_insert</code> trigger will log this insertion into <code>AuditLog</code>.
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Save Attendance</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

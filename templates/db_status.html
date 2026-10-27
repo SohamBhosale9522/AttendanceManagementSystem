@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Database Engine Information{% endblock %}
+{% block header_title %}Dual-Engine Database Health & Schema Information{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <!-- MySQL Status Card -->
+  <div class="col-12 col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-primary bg-opacity-10 text-primary p-2 fs-6"><i class="bi bi-server"></i></span>
+          <h6 class="mb-0 fw-bold text-dark">MySQL 8.0 Relational Engine</h6>
+        </div>
+        {% if db_info.mysql.status %}
+          <span class="badge bg-success-subtle text-success border border-success px-3 py-2">
+            <i class="bi bi-check-circle-fill me-1"></i> Connected & Active
+          </span>
+        {% else %}
+          <span class="badge bg-danger-subtle text-danger border border-danger px-3 py-2">
+            <i class="bi bi-x-circle-fill me-1"></i> Disconnected
+          </span>
+        {% endif %}
+      </div>
+      <div class="card-body p-4">
+        <!-- Masked Configuration Details -->
+        <table class="table table-sm table-borderless mb-4">
+          <tbody>
+            <tr>
+              <td class="text-muted" style="width: 140px;">Database Name:</td>
+              <td class="fw-bold font-monospace text-dark">{{ db_info.mysql.database }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted">Host & Port:</td>
+              <td class="font-monospace text-secondary">{{ db_info.mysql.host }}:{{ db_info.mysql.port }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted">Connected User:</td>
+              <td class="font-monospace text-secondary">{{ db_info.mysql.user }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted">MySQL Version:</td>
+              <td class="font-monospace text-secondary">{{ db_info.mysql.version }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {% if db_info.mysql.error %}
+          <div class="alert alert-danger small mb-3">
+            <strong>Connection Diagnostic:</strong> {{ db_info.mysql.error }}
+          </div>
+        {% endif %}
+
+        <!-- Schema Tables -->
+        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-table me-2 text-primary"></i>Managed Tables & Row Counts</h6>
+        <div class="list-group list-group-flush border rounded-3 overflow-hidden">
+          {% for tbl in db_info.mysql.tables %}
+          <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+            <div>
+              <i class="bi bi-database me-2 text-primary"></i>
+              <strong class="font-monospace text-dark">{{ tbl.name }}</strong>
+            </div>
+            <span class="badge bg-primary rounded-pill px-3">{{ tbl.count }} rows</span>
+          </div>
+          {% else %}
+          <div class="p-3 text-center text-muted small">No tables found.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MongoDB Status Card -->
+  <div class="col-12 col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-success bg-opacity-10 text-success p-2 fs-6"><i class="bi bi-layers-fill"></i></span>
+          <h6 class="mb-0 fw-bold text-dark">MongoDB NoSQL Document Engine</h6>
+        </div>
+        {% if db_info.mongodb.status %}
+          <span class="badge bg-success-subtle text-success border border-success px-3 py-2">
+            <i class="bi bi-check-circle-fill me-1"></i> Connected & Active
+          </span>
+        {% else %}
+          <span class="badge bg-danger-subtle text-danger border border-danger px-3 py-2">
+            <i class="bi bi-x-circle-fill me-1"></i> Disconnected
+          </span>
+        {% endif %}
+      </div>
+      <div class="card-body p-4">
+        <!-- Masked Configuration Details -->
+        <table class="table table-sm table-borderless mb-4">
+          <tbody>
+            <tr>
+              <td class="text-muted" style="width: 140px;">Database Name:</td>
+              <td class="fw-bold font-monospace text-dark">{{ db_info.mongodb.database }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted">Target Host:</td>
+              <td class="font-monospace text-secondary">{{ db_info.mongodb.host_masked }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted">Driver:</td>
+              <td class="font-monospace text-secondary">pymongo (Python NoSQL Driver)</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {% if db_info.mongodb.error %}
+          <div class="alert alert-danger small mb-3">
+            <strong>Connection Diagnostic:</strong> {{ db_info.mongodb.error }}
+          </div>
+        {% endif %}
+
+        <!-- Managed Collections -->
+        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-folder2-open me-2 text-success"></i>Managed Collections & Document Counts</h6>
+        <div class="list-group list-group-flush border rounded-3 overflow-hidden">
+          {% for col in db_info.mongodb.collections %}
+          <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+            <div>
+              <i class="bi bi-file-earmark-code me-2 text-success"></i>
+              <strong class="font-monospace text-dark">{{ col.name }}</strong>
+            </div>
+            <span class="badge bg-success rounded-pill px-3">{{ col.count }} docs</span>
+          </div>
+          {% else %}
+          <div class="p-3 text-center text-muted small">No collections found.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
